@@ -77,7 +77,7 @@ SUBROUTINE read_ham(fn)
           rvec(2, irpt)=t2
           rvec(3, irpt)=t3
         endif
-      ham(t4, t5, irpt)=CMPLX(a,b)
+      ham(t4, t5, irpt)=CMPLX(a,b)/Ry_to_eV
       enddo
     enddo
     !
@@ -136,6 +136,7 @@ END SUBROUTINE
 SUBROUTINE calc_dedk(v, kvec, idir)
   !
   use constants, only : dp, eps6
+  use bxsfdata,  only : acell
   !
   implicit none
   !
@@ -148,16 +149,13 @@ SUBROUTINE calc_dedk(v, kvec, idir)
   !
   allocate(t(1:norb, 1:2))
   !
-  kv1=kvec
-  kv2=kvec
-  !
-  kv1(idir)=kvec(idir)+eps6
-  kv2(idir)=kvec(idir)-eps6
+  kv1=kvec+acell(:, idir)*eps6*0.5
+  kv2=kvec-acell(:, idir)*eps6*0.5
   !
   CALL calc_ek(t(:,1), kv1)
   CALL calc_ek(t(:,2), kv2)
   !
-  v(:)=(t(:,1)-t(:,2))/(2*eps6)
+  v(:)=(t(:,1)-t(:,2))/eps6
   !
   deallocate(t)
   !
@@ -166,6 +164,7 @@ END SUBROUTINE
 SUBROUTINE calc_d2edk2(mu, kvec, idir, jdir)
   !
   use constants, only : dp, eps6
+  use bxsfdata,  only : acell
   !
   implicit none
   !
@@ -183,31 +182,30 @@ SUBROUTINE calc_d2edk2(mu, kvec, idir, jdir)
     kv=kvec
     CALL calc_ek(t(:,2), kv)
     !
-    kv(idir)=kvec(idir)+eps6
+    kv=kvec+acell(:, idir)*eps6
     CALL calc_ek(t(:,3), kv)
     !
-    kv(idir)=kvec(idir)-eps6
+    kv=kvec-acell(:, idir)*eps6
     CALL calc_ek(t(:,1), kv)
     !
-    mu(:)=(t(:,1)+t(:,3)-2*t(:,2))*2.5E11
+    mu(:)=(t(:,1)+t(:,3)-2*t(:,2))/(eps6**2)
     !
   else
     !
     kv=kvec
-    kv(idir)=kvec(idir)+eps6
-    kv(jdir)=kvec(jdir)+eps6
+    kv=kvec+(acell(:, idir)+acell(:, jdir))*eps6*0.5
     CALL calc_ek(t(:,1), kv)
     !
-    kv(idir)=kvec(idir)-eps6
+    kv=kvec-(acell(:, idir)-acell(:, jdir))*eps6*0.5
     CALL calc_ek(t(:,2), kv)
     !
-    kv(jdir)=kvec(jdir)-eps6
-    CALL calc_ek(t(:,4), kv)
-    !
-    kv(idir)=kvec(idir)+eps6
+    kv=kvec+(acell(:, idir)-acell(:, jdir))*eps6*0.5
     CALL calc_ek(t(:,3), kv)
     !
-    mu(:)=(t(:,1)+t(:,4)-t(:,2)-t(:,3))*2.5E11
+    kv=kvec-(acell(:, idir)+acell(:, jdir))*eps6*0.5
+    CALL calc_ek(t(:,4), kv)
+    !
+    mu(:)=(t(:,1)+t(:,4)-t(:,2)-t(:,3))/(eps6**2)
     !
   endif
   !

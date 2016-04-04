@@ -1,6 +1,6 @@
 include ../make.sys
 
-objects = constants.o para.o wanndata.o input.o bxsfdata.o
+objects = constants.o para.o input.o bxsfdata.o wanndata.o
 
 mod.a: $(objects)
 	$(AR) $(ARFLAGS) $@ $?
